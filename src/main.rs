@@ -134,11 +134,22 @@ fn render_page(md_path: &Path, tera: &Tera) -> Result<()> {
 
   fs::create_dir_all(out_path.parent().unwrap())?;
 
+  // Calculate root-relative prefix based on output depth.
+  // build/index.html        → "./"
+  // build/docs/index.html   → "../"
+  // build/a/b/index.html    → "../../"
+  let depth = out_path
+    .strip_prefix(BUILD_DIR).unwrap()
+    .parent().unwrap()
+    .components().count();
+  let root = if depth == 0 { "./".to_string() } else { "../".repeat(depth) };
+
   let template_name = format!("{}.html", page.template);
   let mut ctx = TeraCtx::new();
   ctx.insert("title", &page.title);
   ctx.insert("body", &page.body_html);
   ctx.insert("meta", &page.meta);
+  ctx.insert("root", &root);
 
   let rendered = tera
     .render(&template_name, &ctx)
