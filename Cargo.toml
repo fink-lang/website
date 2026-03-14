@@ -1,0 +1,12 @@
+[package]
+name = "fink-site"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+fink = { git = "https://github.com/fink-lang/fink.git", branch = "name-resolution" }
+pulldown-cmark = "0.13"
+tera = "1"
+walkdir = "2"
+anyhow = "1"
+tiny_http = "0.12"

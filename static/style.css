@@ -1,0 +1,295 @@
+/* ---------------------------------------------------------------
+   ƒink website — stylesheet
+   Design: minimal, typographic, dark code blocks, light background.
+   Token colours for syntax highlighting are at the bottom.
+--------------------------------------------------------------- */
+
+/* --- Reset / base ------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #ffffff;
+  --text:      #2a2a2a;
+  --muted:     #666;
+  --accent:    #005f5f;
+  --accent-h:  #004444;
+  --border:    #e0e0e0;
+  --code-bg:   #1F1F1F;
+  --code-text: #d4d4d4;
+  --font-sans: system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: "Hack", Consolas, Menlo, Monaco, monospace;
+  --font-wordmark: "Hack", Consolas, Menlo, Monaco, monospace;
+  --max-w:     72ch;
+}
+
+html { font-size: 16px; }
+body {
+  font-family: var(--font-sans);
+  color: var(--text);
+  background: var(--bg);
+  line-height: 1.65;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-h); text-decoration: underline; }
+
+/* --- Nav ---------------------------------------------------- */
+header {
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+}
+nav {
+  max-width: calc(var(--max-w) + 8rem);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  height: 3.5rem;
+}
+nav .wordmark {
+  font-family: var(--font-wordmark);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-right: auto;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.wordmark-logo {
+  height: 2.5rem;
+  width: auto;
+}
+nav a { color: var(--muted); font-size: 0.95rem; }
+nav a:hover { color: var(--accent); text-decoration: none; }
+
+/* --- Main / footer ------------------------------------------ */
+main { flex: 1; }
+footer {
+  border-top: 1px solid var(--border);
+  padding: 1.5rem 2rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* --- Hero --------------------------------------------------- */
+.hero {
+  max-width: calc(var(--max-w) + 8rem);
+  margin: 0 auto;
+  padding: 5rem 2rem 3rem;
+  text-align: center;
+}
+.hero-wordmark {
+  font-family: var(--font-wordmark);
+  font-size: 4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.hero-logo {
+  height: 6rem;
+  width: auto;
+}
+.nav-icon {
+  display: flex;
+  align-items: center;
+}
+.nav-icon svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+.hero-tagline {
+  font-size: 1.25rem;
+  color: var(--muted);
+  margin-bottom: 2rem;
+}
+
+/* --- Buttons ------------------------------------------------ */
+.btn {
+  display: inline-block;
+  padding: 0.55rem 1.4rem;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background: var(--accent);
+  color: #fff;
+  margin: 0.25rem;
+  text-decoration: none;
+}
+.btn:hover { background: var(--accent-h); color: #fff; text-decoration: none; }
+.btn-outline {
+  background: transparent;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+}
+.btn-outline:hover { background: var(--accent); color: #fff; }
+
+/* --- Features grid ------------------------------------------ */
+.features {
+  max-width: calc(var(--max-w) + 8rem);
+  margin: 0 auto;
+  padding: 2rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 2rem;
+}
+.feature h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+  color: var(--text);
+}
+.feature p { font-size: 0.9rem; color: var(--muted); }
+
+/* --- Taste section ------------------------------------------ */
+.taste {
+  max-width: calc(var(--max-w) + 8rem);
+  margin: 0 auto;
+  padding: 2rem;
+}
+.taste h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+
+/* --- Status banner ------------------------------------------ */
+.status-banner {
+  background: #f5f5f5;
+  border-top: 1px solid var(--border);
+  padding: 1.5rem 2rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+/* --- Prose (docs pages) ------------------------------------- */
+.prose {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 3rem 2rem;
+}
+.prose h1 { font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; }
+.prose h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-top: 3rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--border);
+}
+.prose h3 { font-size: 1.1rem; font-weight: 700; margin-top: 2rem; margin-bottom: 0.5rem; }
+.prose h4 { font-size: 1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+.prose p { margin-bottom: 1rem; }
+.prose ul, .prose ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+.prose li { margin-bottom: 0.25rem; }
+.prose blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 1rem;
+  color: var(--muted);
+  margin: 1rem 0;
+  font-style: italic;
+}
+.prose hr { border: none; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: #f3f3f3;
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+}
+.prose a { color: var(--accent); }
+.prose table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+.prose th, .prose td { border: 1px solid var(--border); padding: 0.4rem 0.7rem; text-align: left; }
+.prose th { background: #f5f5f5; font-weight: 600; }
+
+/* --- Code blocks -------------------------------------------- */
+pre.code-block {
+  background: var(--code-bg);
+  color: var(--code-text);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.55;
+  padding: 1.25rem 1.5rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 1rem 0 1.5rem;
+}
+pre.code-block code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* Taste section code blocks get a bit more breathing room */
+.taste pre.code-block { margin-bottom: 2rem; }
+
+/* --- Syntax token colours ----------------------------------- */
+/* These classes are emitted by src/highlight.rs               */
+.kw      { color: #C586C0; }                    /* fn, match, import, …  */
+.kw-b    { color: #569CD6; }                    /* true, false           */
+.ty      { color: #4EC9B0; }                    /* u8, f32, str, …       */
+.fn      { color: #DCDCAA; }                    /* function call name    */
+.blk     { color: #DCDCAA; }                    /* block name: filter, map, … */
+.tag     { color: #569CD6; }                    /* tagged literal/template */
+.prop    { color: #4FC1FF; }                    /* property name after . */
+.rec-key { color: #9CDCFE; }                    /* record key            */
+.ident   { color: #4FC1FF; }                    /* plain identifier      */
+.op      { color: #D4D4D4; }                    /* operators             */
+.op-asgn { color: #D4D4D4; }                    /* = assignment          */
+.op-pipe { color: #C586C0; }                    /* | pipe, |= binding    */
+.op-rng  { color: #D4D4D4; }                    /* .. ...                */
+.op-dot  { color: #D4D4D4; }                    /* . accessor dot        */
+.br      { color: #CCCCCC; }                    /* { } [ ] ( ) fallback  */
+.br-1    { color: #DCDCAA; }                    /* depth 1 — gold        */
+.br-2    { color: #DA70D6; }                    /* depth 2 — orchid      */
+.br-3    { color: #179FFF; }                    /* depth 3 — blue        */
+.str     { color: #CE9178; }                    /* string content        */
+.str-e   { color: #D7BA7D; }                    /* ${ } interpolation / escape */
+.num     { color: #B5CEA8; }                    /* decimal numeric       */
+.num-b   { color: #D7BA7D; }                    /* hex/octal/binary numeric */
+.cmt     { color: #6A9955; font-style: italic; }/* comments              */
+.ph      { color: #C586C0; }                    /* ? placeholder         */
+.wc      { color: #C586C0; }                    /* _ wildcard            */
+
+/* --- 404 ---------------------------------------------------- */
+.not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 7rem); /* subtract header + footer */
+  gap: 1.5rem;
+  text-align: center;
+}
+.not-found img {
+  height: 12rem;
+  width: auto;
+}
+.not-found h1 {
+  font-size: 4rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.not-found p {
+  color: var(--muted);
+}
+
+/* --- Responsive -------------------------------------------- */
+@media (max-width: 600px) {
+  .hero-wordmark { font-size: 3rem; }
+  .features { grid-template-columns: 1fr; }
+  nav { gap: 1rem; }
+  pre.code-block { font-size: 0.8rem; padding: 1rem; }
+}

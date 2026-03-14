@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="hero">
+  <h1 class="hero-wordmark"><img src="/logo.png" alt="" class="hero-logo">ƒink</h1>
+  <p class="hero-tagline">A functional language that compiles to WasmGC.</p>
+  <a class="btn" href="/docs/">Read the docs</a>
+  <a class="btn btn-outline" href="https://github.com/fink-lang/fink">View source</a>
+</section>
+
+<section class="features">
+  <div class="feature">
+    <h3>Expression-based</h3>
+    <p>Everything is an expression. Indentation creates blocks. No statement/expression split.</p>
+  </div>
+  <div class="feature">
+    <h3>Pattern matching</h3>
+    <p>Destructuring and <code>match</code> work uniformly across literals, sequences, records, and types.</p>
+  </div>
+  <div class="feature">
+    <h3>Pipes &amp; partial application</h3>
+    <p>Compose functions left-to-right with <code>|</code>. Use <code>?</code> anywhere to create an anonymous function on the spot.</p>
+  </div>
+  <div class="feature">
+    <h3>Compiles to WasmGC</h3>
+    <p>The compiler targets WebAssembly GC via Binaryen. Fast, portable, and close to the metal.</p>
+  </div>
+</section>
+
+<section class="taste">
+  <h2>A taste of ƒink</h2>
+
+  {{ body | safe }}
+
+</section>
+
+<section class="status-banner">
+  <p>
+    ƒink is under active development. The compiler pipeline is progressing —
+    lexer, parser, and CPS transform are complete; type inference and codegen are next.
+    Language design is stable. <a href="https://github.com/fink-lang/fink">Follow along on GitHub.</a>
+  </p>
+</section>
+
+{% endblock content %}
