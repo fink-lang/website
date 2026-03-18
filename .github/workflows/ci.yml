@@ -41,6 +41,10 @@ jobs:
         working-directory: website
         run: cargo run --release
 
+      - name: Build playground
+        working-directory: website/playground
+        run: npm ci && node build.mjs
+
       - name: Verify output
         working-directory: website
         run: |
@@ -48,6 +52,7 @@ jobs:
           test -f build/docs/index.html
           test -f build/404.html
           test -f build/CNAME
+          test -f build/playground/index.html
 
       - name: Upload pages artifact
         if: github.ref == 'refs/heads/main'
