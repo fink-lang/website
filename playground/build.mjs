@@ -62,6 +62,8 @@ await esbuild.build({
     '.wasm': 'binary',
     '.ttf': 'file',
   },
+  // monaco-textmate uses Node's 'path' only for a debug basename call.
+  alias: { path: './src/path-stub.js' },
   minify: false, // keep readable during development
 })
 console.log('  bundled playground.js')
@@ -90,7 +92,70 @@ fs.writeFileSync(`${OUT}/monaco.css`, css)
 console.log('  copied monaco.css')
 
 // ---------------------------------------------------------------------------
-// 5. Analysis WASM (fink_wasm.js + fink_wasm_bg.wasm)
+// 5. TM grammar assets (onig.wasm + fink.tmLanguage.json)
+//    vscode-textmate uses vscode-oniguruma.
+//
+//    Grammar is sourced from the project root (../fink.tmLanguage.json) and
+//    transformed for playground use:
+//      - Remove top-level include of source.jsx.fink (no JSX support needed)
+//      - Replace all "include": "source.fink" self-references with "$self"
+//        (avoids re-entrant grammar loads in vscode-textmate)
+//      - Strip meta.scope-example.* rules (grammar documentation scaffolding
+//        with empty begin/while patterns that cause infinite recursion)
+// ---------------------------------------------------------------------------
+
+const onigWasmSrc = path.join(
+  path.dirname(require.resolve('vscode-oniguruma/package.json')),
+  'release/onig.wasm',
+)
+fs.copyFileSync(onigWasmSrc, `${OUT}/onig.wasm`)
+console.log('  copied onig.wasm')
+
+{
+  const grammarSrc = path.resolve('..', 'fink.tmLanguage.json')
+  const grammar = JSON.parse(fs.readFileSync(grammarSrc, 'utf8'))
+
+  // 1. Remove top-level source.jsx.fink include
+  if (grammar.patterns) {
+    grammar.patterns = grammar.patterns.filter(
+      p => p.include !== 'source.jsx.fink',
+    )
+  }
+
+  // 2. Walk the entire grammar tree and apply transforms to every node
+  function transformNode(node) {
+    if (Array.isArray(node)) {
+      return node
+        .filter(item => {
+          // Strip meta.scope-example.* rules
+          const name = item.name ?? item.scopeName
+          return !name?.startsWith('meta.scope-example.')
+        })
+        .map(transformNode)
+    }
+    if (node && typeof node === 'object') {
+      const out = {}
+      for (const [k, v] of Object.entries(node)) {
+        if (k === 'include' && v === 'source.fink') {
+          out[k] = '$self'
+        } else if (k === 'patterns' || k === 'repository' || k === 'captures' || k === 'beginCaptures' || k === 'endCaptures') {
+          out[k] = transformNode(v)
+        } else {
+          out[k] = (v && typeof v === 'object') ? transformNode(v) : v
+        }
+      }
+      return out
+    }
+    return node
+  }
+
+  const transformed = transformNode(grammar)
+  fs.writeFileSync(`${OUT}/fink.tmLanguage.json`, JSON.stringify(transformed))
+  console.log('  transformed + wrote fink.tmLanguage.json from ../fink.tmLanguage.json')
+}
+
+// ---------------------------------------------------------------------------
+// 7. Analysis WASM (fink_wasm.js + fink_wasm_bg.wasm)
 //    Served as plain static files; loaded at runtime via fetch + data-URL
 //    dynamic import (same technique as vscode-fink extension).
 // ---------------------------------------------------------------------------
@@ -106,7 +171,7 @@ for (const file of ['fink_wasm.js', 'fink_wasm_bg.wasm']) {
 }
 
 // ---------------------------------------------------------------------------
-// 6. index.html
+// 8. index.html
 // ---------------------------------------------------------------------------
 
 fs.copyFileSync('index.html', `${OUT}/index.html`)
