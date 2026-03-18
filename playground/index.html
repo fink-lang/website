@@ -56,18 +56,29 @@
 
     .header-spacer { flex: 1; }
 
-    #run-btn {
+    .header-btn {
       padding: 4px 14px;
-      background: var(--btn-bg);
-      color: #fff;
       border: none;
       border-radius: 3px;
       font-size: 12px;
       font-family: inherit;
       cursor: pointer;
     }
+    .header-btn:disabled { opacity: 0.5; cursor: default; }
+
+    #run-btn {
+      background: var(--btn-bg);
+      color: #fff;
+    }
     #run-btn:hover:not(:disabled) { background: var(--btn-hover); }
-    #run-btn:disabled { opacity: 0.5; cursor: default; }
+
+    #share-btn {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    #share-btn:hover:not(:disabled) { color: #fff; border-color: var(--text-dim); }
+    #share-btn.copied { color: var(--ok); border-color: var(--ok); }
 
     /* ── workspace ── */
     .workspace {
@@ -116,10 +127,11 @@
 </head>
 <body>
   <div class="header">
-    <a href="../">← ƒink</a>
+    <a href="../"><img src="../favicon-192.png" alt="ƒink" height="24" style="display:block;"></a>
     <span class="header-title">Playground</span>
     <span class="header-spacer"></span>
-    <button id="run-btn">&#9654; Run</button>
+    <button id="share-btn" class="header-btn">Share</button>
+    <button id="run-btn" class="header-btn">&#9654; Run</button>
   </div>
 
   <div class="workspace">

@@ -435,6 +435,10 @@ const editor = monaco.editor.create(editorEl, {
   'semanticHighlighting.enabled': true,
   padding: { top: 16, bottom: 16 },
   lineNumbers: 'on',
+  accessibilitySupport: 'off',
+  tabSize: 2,
+  insertSpaces: true,
+  detectIndentation: false,
   automaticLayout: true,
 })
 
@@ -464,6 +468,89 @@ runBtn.addEventListener('click', async () => {
   } finally {
     runBtn.disabled = false
   }
+})
+
+// ---------------------------------------------------------------------------
+// URL hash — shareable source links
+//
+// Encoding: UTF-8 → deflate-raw (CompressionStream) → base62
+// Alphabet:  0-9 a-z A-Z  (URL-safe, no special chars)
+// Hash format: #<base62data>  (bare, no key prefix)
+// ---------------------------------------------------------------------------
+
+const BASE62 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+async function encodeSource(src: string): Promise<string> {
+  const bytes = new TextEncoder().encode(src)
+  const cs = new CompressionStream('deflate-raw')
+  const writer = cs.writable.getWriter()
+  writer.write(bytes)
+  writer.close()
+  const buf = await new Response(cs.readable).arrayBuffer()
+  const u8 = new Uint8Array(buf)
+
+  // Treat compressed bytes as big-endian integer, encode in base62.
+  // Use BigInt to avoid precision loss on large payloads.
+  let n = 0n
+  for (const b of u8) n = (n << 8n) | BigInt(b)
+
+  if (n === 0n) return BASE62[0]
+  let out = ''
+  const base = 62n
+  while (n > 0n) {
+    out = BASE62[Number(n % base)] + out
+    n /= base
+  }
+  // Preserve leading zero-bytes as leading '0' digits.
+  for (let i = 0; i < u8.length && u8[i] === 0; i++) out = BASE62[0] + out
+  return out
+}
+
+async function decodeSource(encoded: string): Promise<string> {
+  // base62 → BigInt → bytes
+  let n = 0n
+  const base = 62n
+  for (const ch of encoded) {
+    const v = BASE62.indexOf(ch)
+    if (v < 0) throw new Error(`Invalid base62 char: ${ch}`)
+    n = n * base + BigInt(v)
+  }
+
+  // Convert BigInt to Uint8Array (big-endian).
+  const hex = n.toString(16).padStart(2, '0')
+  const padded = hex.length % 2 ? '0' + hex : hex
+  const bytes = new Uint8Array(padded.length / 2)
+  for (let i = 0; i < bytes.length; i++)
+    bytes[i] = parseInt(padded.slice(i * 2, i * 2 + 2), 16)
+
+  const ds = new DecompressionStream('deflate-raw')
+  const writer = ds.writable.getWriter()
+  writer.write(bytes)
+  writer.close()
+  const buf = await new Response(ds.readable).arrayBuffer()
+  return new TextDecoder().decode(buf)
+}
+
+// On load: restore source from hash if present.
+const initialHash = location.hash.slice(1)
+if (initialHash) {
+  decodeSource(initialHash)
+    .then(src => editor.setValue(src))
+    .catch(err => console.warn('[fink] Failed to decode URL hash:', err))
+}
+
+// Share button: encode current source → update hash → copy URL to clipboard.
+const shareBtn = document.getElementById('share-btn') as HTMLButtonElement
+shareBtn.addEventListener('click', async () => {
+  const encoded = await encodeSource(editor.getValue())
+  history.replaceState(null, '', '#' + encoded)
+  await navigator.clipboard.writeText(location.href)
+  shareBtn.textContent = '✓ Copied'
+  shareBtn.classList.add('copied')
+  setTimeout(() => {
+    shareBtn.textContent = 'Share'
+    shareBtn.classList.remove('copied')
+  }, 2000)
 })
 
 // ---------------------------------------------------------------------------
