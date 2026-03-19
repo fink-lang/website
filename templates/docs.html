@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="docs-layout">
+  <aside class="docs-sidebar">
+    <ul>
+      {% for entry in toc %}
+      <li><a href="#{{ entry.slug }}">{{ entry.text }}</a></li>
+      {% endfor %}
+    </ul>
+  </aside>
+  <article class="docs-content prose">
+    {{ body | safe }}
+  </article>
+</div>
+{% endblock content %}

@@ -1,6 +1,6 @@
 ---
 title: Language Reference
-template: page
+template: docs
 ---
 
 # Language Reference

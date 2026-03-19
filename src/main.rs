@@ -118,6 +118,7 @@ fn render_page(md_path: &Path, tera: &Tera) -> Result<()> {
 
   let (mut meta, body) = parse_frontmatter(&source);
 
+  let toc = markdown::extract_toc(body);
   let page = Page {
     title: meta.remove("title"),
     template: meta.remove("template").unwrap_or_else(|| "page".to_string()),
@@ -150,6 +151,15 @@ fn render_page(md_path: &Path, tera: &Tera) -> Result<()> {
   ctx.insert("body", &page.body_html);
   ctx.insert("meta", &page.meta);
   ctx.insert("root", &root);
+  let toc_items: Vec<HashMap<String, String>> = toc.iter()
+    .map(|e| {
+      let mut m = HashMap::new();
+      m.insert("text".to_string(), e.text.clone());
+      m.insert("slug".to_string(), e.slug.clone());
+      m
+    })
+    .collect();
+  ctx.insert("toc", &toc_items);
 
   let rendered = tera
     .render(&template_name, &ctx)

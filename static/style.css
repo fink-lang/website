@@ -174,11 +174,72 @@ footer {
   color: var(--muted);
 }
 
+/* --- Docs layout (sidebar + content) ----------------------- */
+.docs-layout {
+  display: flex;
+  max-width: calc(var(--max-w) + 16rem);
+  margin: 0 auto;
+  padding: 2rem 2rem 0;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.docs-sidebar {
+  width: 12rem;
+  flex-shrink: 0;
+  align-self: flex-start;
+  position: sticky;
+  top: calc(3.5rem + 1.5rem);
+  font-size: 0.875rem;
+  max-height: calc(100vh - 3.5rem - 3rem);
+  overflow-y: auto;
+}
+
+.docs-sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.docs-sidebar a {
+  display: block;
+  padding: 0.3rem 0.75rem;
+  color: var(--muted);
+  border-left: 2px solid var(--border);
+  text-decoration: none;
+  line-height: 1.4;
+}
+
+.docs-sidebar a:hover {
+  color: var(--accent);
+  border-left-color: var(--accent);
+}
+
+.docs-content {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 800px) {
+  .docs-sidebar { display: none; }
+  .docs-layout { padding: 0; }
+}
+
 /* --- Prose (docs pages) ------------------------------------- */
 .prose {
   max-width: var(--max-w);
   margin: 0 auto;
   padding: 3rem 2rem;
+}
+
+/* When prose is inside the docs layout, let the layout control width */
+.docs-content.prose {
+  max-width: none;
+  margin: 0;
+  padding: 1rem 0 3rem;
 }
 .prose h1 { font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; }
 .prose h2 {
