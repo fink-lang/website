@@ -6,6 +6,7 @@
 
 /* --- Reset / base ------------------------------------------- */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+code, pre, kbd, samp { font-family: var(--font-mono); }
 
 :root {
   --bg:        #ffffff;
