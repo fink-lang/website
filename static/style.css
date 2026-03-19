@@ -252,9 +252,9 @@ pre.code-block code {
 .op-rng  { color: #D4D4D4; }                    /* .. ...                */
 .op-dot  { color: #D4D4D4; }                    /* . accessor dot        */
 .br      { color: #CCCCCC; }                    /* { } [ ] ( ) fallback  */
-.br-1    { color: #DCDCAA; }                    /* depth 1 — gold        */
-.br-2    { color: #DA70D6; }                    /* depth 2 — orchid      */
-.br-3    { color: #179FFF; }                    /* depth 3 — blue        */
+.br-1    { color: #BDBB85; }                    /* depth 1 — gold        */
+.br-2    { color: #CC76D1; }                    /* depth 2 — orchid      */
+.br-3    { color: #4A9DF8; }                    /* depth 3 — blue        */
 .str     { color: #CE9178; }                    /* string content        */
 .str-e   { color: #D7BA7D; }                    /* ${ } interpolation / escape */
 .num     { color: #B5CEA8; }                    /* decimal numeric       */
