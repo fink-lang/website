@@ -4,13 +4,64 @@
 // intercepted and replaced with highlighted HTML produced by highlight::highlight().
 // All other code blocks fall through to pulldown-cmark's default handling
 // (no highlighting — plain text in <code>).
+//
+// h2 headings get id attributes derived from their text so the sidebar TOC
+// can link to them.
 
-use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag, TagEnd, html};
+use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, TagEnd, html};
 
 use crate::highlight;
 
+/// A single TOC entry extracted from a ## heading.
+pub struct TocEntry {
+  pub text: String,
+  pub slug: String,
+}
+
+/// Slugify a heading: lowercase, spaces/punctuation → hyphens, collapse runs.
+pub fn slugify(text: &str) -> String {
+  text.chars()
+    .map(|c| if c.is_alphanumeric() { c.to_ascii_lowercase() } else { '-' })
+    .collect::<String>()
+    .split('-')
+    .filter(|s| !s.is_empty())
+    .collect::<Vec<_>>()
+    .join("-")
+}
+
+/// Extract TOC entries from ## headings in the markdown source.
+pub fn extract_toc(md: &str) -> Vec<TocEntry> {
+  let parser = Parser::new_ext(md, Options::empty());
+
+  let mut entries = Vec::new();
+  let mut in_h2 = false;
+  let mut text_buf = String::new();
+
+  for event in parser {
+    match event {
+      Event::Start(Tag::Heading { level: HeadingLevel::H2, .. }) => {
+        in_h2 = true;
+        text_buf.clear();
+      }
+      Event::Text(ref text) if in_h2 => {
+        text_buf.push_str(text);
+      }
+      Event::End(TagEnd::Heading(HeadingLevel::H2)) if in_h2 => {
+        in_h2 = false;
+        let text = text_buf.trim().to_string();
+        let slug = slugify(&text);
+        entries.push(TocEntry { text, slug });
+      }
+      _ => {}
+    }
+  }
+
+  entries
+}
+
 /// Render a markdown string to an HTML string.
 /// Fink code blocks are syntax-highlighted.
+/// h2 headings get id attributes for sidebar anchor links.
 pub fn render(md: &str) -> String {
   let opts = Options::ENABLE_TABLES
     | Options::ENABLE_FOOTNOTES
@@ -23,8 +74,14 @@ pub fn render(md: &str) -> String {
   let mut in_fink_block = false;
   let mut fink_buf = String::new();
 
+  // For h2: buffer text events between Start/End so we can wrap with id=
+  let mut in_h2 = false;
+  let mut h2_buf: Vec<Event<'static>> = Vec::new();
+  let mut h2_text = String::new();
+
   for event in parser {
     match event {
+      // --- Fink code blocks ---
       Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(ref lang)))
         if lang.as_ref() == "fink" =>
       {
@@ -38,7 +95,6 @@ pub fn render(md: &str) -> String {
 
       Event::End(TagEnd::CodeBlock) if in_fink_block => {
         in_fink_block = false;
-        // Trim trailing newline that pulldown-cmark adds
         let src = fink_buf.trim_end_matches('\n');
         let highlighted = highlight::highlight(src);
         let html = format!(
@@ -48,8 +104,32 @@ pub fn render(md: &str) -> String {
         events.push(Event::Html(html.into()));
       }
 
+      // --- h2 headings: buffer contents, inject id= on close ---
+      Event::Start(Tag::Heading { level: HeadingLevel::H2, .. }) => {
+        in_h2 = true;
+        h2_buf.clear();
+        h2_text.clear();
+      }
+
+      Event::Text(text) if in_h2 => {
+        h2_text.push_str(&text);
+        h2_buf.push(Event::Text(text.into_static()));
+      }
+
+      Event::End(TagEnd::Heading(HeadingLevel::H2)) if in_h2 => {
+        in_h2 = false;
+        let slug = slugify(&h2_text);
+        events.push(Event::Html(format!("<h2 id=\"{slug}\">").into()));
+        events.extend(h2_buf.drain(..));
+        events.push(Event::Html("</h2>\n".into()));
+      }
+
       other => {
-        events.push(other);
+        if in_h2 {
+          h2_buf.push(other.into_static());
+        } else {
+          events.push(other);
+        }
       }
     }
   }
