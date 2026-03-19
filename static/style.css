@@ -16,9 +16,9 @@
   --border:    #e0e0e0;
   --code-bg:   #1F1F1F;
   --code-text: #d4d4d4;
-  --font-sans: system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
   --font-mono: "Hack", Consolas, Menlo, Monaco, monospace;
-  --font-wordmark: "Hack", Consolas, Menlo, Monaco, monospace;
+  --font-wordmark: "Inter", system-ui, sans-serif;
   --max-w:     72ch;
 }
 
