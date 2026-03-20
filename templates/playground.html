@@ -55,8 +55,14 @@
     }
   </style>
 </head>
-<body style="height:100%">
-  <div id="playground-mount" style="height:100%">
+<body style="height:100%;display:flex;flex-direction:column">
+  <header style="display:flex;align-items:center;gap:10px;padding:0 14px;height:36px;background:var(--fink-editor-surface);border-bottom:1px solid var(--fink-editor-border);flex-shrink:0">
+    <a href="{{ root }}" style="display:flex;align-items:center;gap:6px;text-decoration:none;color:var(--fink-editor-fg-dim);font-size:13px">
+      <img src="{{ root }}favicon-192.png" alt="" height="18">ƒink
+    </a>
+    <span style="font-size:13px;font-weight:600;color:var(--fink-editor-fg)">Playground</span>
+  </header>
+  <div id="playground-mount" style="flex:1;min-height:0">
     <script>
       fetch('/playground/fragment.html').then(r => r.text()).then(html => {
         const mount = document.getElementById('playground-mount')
