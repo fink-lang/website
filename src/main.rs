@@ -11,6 +11,7 @@
 mod highlight;
 mod markdown;
 mod serve;
+mod svg;
 
 use std::collections::HashMap;
 use std::fs;
@@ -43,10 +44,17 @@ fn main() -> Result<()> {
       serve::stop()?;
       return Ok(());
     }
+    Some("svg") => {
+      let path = args.get(2).expect("Usage: fink-site svg <file.fnk>");
+      let src = fs::read_to_string(path)
+        .with_context(|| format!("failed to read {path}"))?;
+      print!("{}", svg::render_svg(&src));
+      return Ok(());
+    }
     Some("build") | None => {}
     Some(other) => {
       eprintln!("Unknown command: {other}");
-      eprintln!("Usage: fink-site [build | serve [port] | stop]");
+      eprintln!("Usage: fink-site [build | serve [port] | stop | svg <file>]");
       std::process::exit(1);
     }
   }
