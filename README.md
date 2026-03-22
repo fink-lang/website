@@ -1,37 +1,43 @@
-## Welcome to GitHub Pages
+# fink-lang.org
 
-You can use the [editor on GitHub](https://github.com/fink-lang/fink-lang.github.io/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
+Source for the [fink-lang.org](https://fink-lang.org) website.
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+## Overview
 
-### Markdown
+A custom static site generator written in Rust. Reads Markdown content with YAML
+frontmatter, renders it through Tera templates with fink syntax highlighting,
+and outputs plain HTML/CSS to `build/`.
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+The [playground](/playground/) is embedded as a pre-built artifact from
+[fink-lang/playground](https://github.com/fink-lang/playground).
 
-```markdown
-Syntax highlighted code block
+## Project structure
 
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
+```
+content/        Markdown pages (frontmatter: title, template)
+templates/      Tera HTML templates
+static/         Assets copied verbatim to build/
+src/            Rust source for the site builder
+build/          Generated output (git-ignored)
 ```
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
+## Development
 
-### Jekyll Themes
+```sh
+# Build the site
+cargo run
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/fink-lang/fink-lang.github.io/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+# Build and serve locally (default port 8080)
+cargo run -- serve
+cargo run -- serve 3000
 
-### Support or Contact
+# Stop the dev server
+cargo run -- stop
+```
 
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+## Deployment
+
+Handled by GitHub Actions (`.github/workflows/ci.yml`):
+
+- Every push/PR: build and verify output
+- Push to `main`: deploy to GitHub Pages
