@@ -1,3 +1,5 @@
+@import url("syntax-colors.css");
+
 /* ---------------------------------------------------------------
    ƒink website — stylesheet
    Design: minimal, typographic, dark code blocks, light background.
@@ -298,8 +300,7 @@ pre.code-block code {
 .taste pre.code-block { margin-bottom: 2rem; }
 
 /* --- Syntax token colours ----------------------------------- */
-/* Variables defined in syntax-colors.css                       */
-@import url("syntax-colors.css");
+/* Variables defined in syntax-colors.css (imported at top)     */
 
 .kw      { color: var(--fink-kw); }
 .kw-b    { color: var(--fink-kw-b); }
