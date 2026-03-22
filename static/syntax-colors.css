@@ -1,0 +1,34 @@
+/* Fink syntax token colours.
+   Single source of truth — consumed by:
+     - static/style.css  (token classes reference these variables)
+     - src/svg.rs         (parsed at build time for SVG rendering)
+   Variables are emitted as CSS custom properties on :root.
+   Classes using them are defined in style.css. */
+
+:root {
+  --fink-bg:      #1F1F1F;                      /* code block background */
+  --fink-text:    #D4D4D4;                      /* default text          */
+
+  --fink-kw:      #C586C0;                      /* fn, match, import, …  */
+  --fink-kw-b:    #569CD6;                      /* true, false           */
+  --fink-ty:      #4EC9B0;                      /* u8, f32, str, …       */
+  --fink-call:    #DCDCAA;                      /* function call name    */
+  --fink-blk:     #DCDCAA;                      /* custom block name         */
+  --fink-tag:     #569CD6;                      /* tagged literal/template */
+  --fink-prop:    #4FC1FF;                      /* property name after . */
+  --fink-rec-key: #9CDCFE;                      /* record key            */
+  --fink-ident:   #4FC1FF;                      /* plain identifier      */
+  --fink-op:      #D4D4D4;                      /* operators             */
+  --fink-op-pipe: #C586C0;                      /* | pipe, |= binding    */
+  --fink-br:      #CCCCCC;                      /* { } [ ] ( ) fallback  */
+  --fink-br-1:    #BDBB85;                      /* depth 1 — gold        */
+  --fink-br-2:    #CC76D1;                      /* depth 2 — orchid      */
+  --fink-br-3:    #4A9DF8;                      /* depth 3 — blue        */
+  --fink-str:     #CE9178;                      /* string content        */
+  --fink-str-esc: #D7BA7D;                      /* ${ } interpolation / escape */
+  --fink-num:     #B5CEA8;                      /* decimal numeric       */
+  --fink-num-b:   #D7BA7D;                      /* hex/octal/binary numeric */
+  --fink-cmt:     #6A9955;                      /* comments              */
+  --fink-partial: #C586C0;                      /* ? placeholder         */
+  --fink-wldcrd:  #C586C0;                      /* _ wildcard            */
+}

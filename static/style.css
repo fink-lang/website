@@ -15,8 +15,8 @@ code, pre, kbd, samp { font-family: var(--font-mono); }
   --accent:    #005f5f;
   --accent-h:  #004444;
   --border:    #e0e0e0;
-  --code-bg:   #1F1F1F;
-  --code-text: #d4d4d4;
+  --code-bg:   var(--fink-bg);
+  --code-text: var(--fink-text);
   --font-sans: "Inter", system-ui, sans-serif;
   --font-mono: "Hack", Consolas, Menlo, Monaco, monospace;
   --font-wordmark: "Inter", system-ui, sans-serif;
@@ -298,32 +298,31 @@ pre.code-block code {
 .taste pre.code-block { margin-bottom: 2rem; }
 
 /* --- Syntax token colours ----------------------------------- */
-/* These classes are emitted by src/highlight.rs               */
-.kw      { color: #C586C0; }                    /* fn, match, import, …  */
-.kw-b    { color: #569CD6; }                    /* true, false           */
-.ty      { color: #4EC9B0; }                    /* u8, f32, str, …       */
-.fn      { color: #DCDCAA; }                    /* function call name    */
-.blk     { color: #DCDCAA; }                    /* block name: filter, map, … */
-.tag     { color: #569CD6; }                    /* tagged literal/template */
-.prop    { color: #4FC1FF; }                    /* property name after . */
-.rec-key { color: #9CDCFE; }                    /* record key            */
-.ident   { color: #4FC1FF; }                    /* plain identifier      */
-.op      { color: #D4D4D4; }                    /* operators             */
-.op-asgn { color: #D4D4D4; }                    /* = assignment          */
-.op-pipe { color: #C586C0; }                    /* | pipe, |= binding    */
-.op-rng  { color: #D4D4D4; }                    /* .. ...                */
-.op-dot  { color: #D4D4D4; }                    /* . accessor dot        */
-.br      { color: #CCCCCC; }                    /* { } [ ] ( ) fallback  */
-.br-1    { color: #BDBB85; }                    /* depth 1 — gold        */
-.br-2    { color: #CC76D1; }                    /* depth 2 — orchid      */
-.br-3    { color: #4A9DF8; }                    /* depth 3 — blue        */
-.str     { color: #CE9178; }                    /* string content        */
-.str-e   { color: #D7BA7D; }                    /* ${ } interpolation / escape */
-.num     { color: #B5CEA8; }                    /* decimal numeric       */
-.num-b   { color: #D7BA7D; }                    /* hex/octal/binary numeric */
-.cmt     { color: #6A9955; font-style: italic; }/* comments              */
-.ph      { color: #C586C0; }                    /* ? placeholder         */
-.wc      { color: #C586C0; }                    /* _ wildcard            */
+/* Variables defined in syntax-colors.css                       */
+@import url("syntax-colors.css");
+
+.kw      { color: var(--fink-kw); }
+.kw-b    { color: var(--fink-kw-b); }
+.ty      { color: var(--fink-ty); }
+.fn      { color: var(--fink-call); }
+.blk     { color: var(--fink-blk); }
+.tag     { color: var(--fink-tag); }
+.prop    { color: var(--fink-prop); }
+.rec-key { color: var(--fink-rec-key); }
+.ident   { color: var(--fink-ident); }
+.op, .op-asgn, .op-rng, .op-dot { color: var(--fink-op); }
+.op-pipe { color: var(--fink-op-pipe); }
+.br      { color: var(--fink-br); }
+.br-1    { color: var(--fink-br-1); }
+.br-2    { color: var(--fink-br-2); }
+.br-3    { color: var(--fink-br-3); }
+.str     { color: var(--fink-str); }
+.str-e   { color: var(--fink-str-esc); }
+.num     { color: var(--fink-num); }
+.num-b   { color: var(--fink-num-b); }
+.cmt     { color: var(--fink-cmt); font-style: italic; }
+.ph      { color: var(--fink-partial); }
+.wc      { color: var(--fink-wldcrd); }
 
 /* --- 404 ---------------------------------------------------- */
 .not-found {

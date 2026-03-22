@@ -454,20 +454,51 @@ fn render(src: &str, anns: &mut Annotations) -> String {
   out
 }
 
-// ---- public entry point ---------------------------------------------------
+// ---- public entry points --------------------------------------------------
+
+fn collect(src: &str) -> Annotations {
+  let mut anns = Annotations::new();
+  collect_lexer_anns(src, &mut anns);
+  if let Ok(parse_result) = parser::parse(src) {
+    collect_ast_anns(&parse_result.root, &mut anns, 1);
+  }
+  anns
+}
 
 /// Highlight a Fink source snippet, returning an HTML fragment.
 /// Suitable for wrapping in `<pre><code>...</code></pre>`.
 pub fn highlight(src: &str) -> String {
-  let mut anns = Annotations::new();
+  let mut anns = collect(src);
+  render(src, &mut anns)
+}
 
-  // Lexer pass always runs (fallback if parse fails)
-  collect_lexer_anns(src, &mut anns);
+/// Return resolved annotation spans as (start, end, class) tuples.
+/// Spans are non-overlapping and sorted by position; gaps between spans
+/// are plain (unstyled) text.
+pub fn annotate(src: &str) -> Vec<(usize, usize, String)> {
+  let mut anns = collect(src);
+  anns.sort();
 
-  // AST pass if parse succeeds
-  if let Ok(parse_result) = parser::parse(src) {
-    collect_ast_anns(&parse_result.root, &mut anns, 1);
+  let mut result = Vec::new();
+  let mut cursor = 0usize;
+  let mut ann_idx = 0usize;
+
+  while cursor < src.len() {
+    while ann_idx < anns.anns.len() && anns.anns[ann_idx].end <= cursor {
+      ann_idx += 1;
+    }
+    let next = anns.anns[ann_idx..].iter().find(|a| a.start >= cursor);
+    match next {
+      None => break,
+      Some(ann) if ann.start > cursor => { cursor = ann.start; }
+      Some(ann) => {
+        let end = ann.end.min(src.len());
+        result.push((cursor, end, ann.class.to_string()));
+        cursor = end;
+        ann_idx += 1;
+      }
+    }
   }
 
-  render(src, &mut anns)
+  result
 }
