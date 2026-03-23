@@ -18,7 +18,7 @@ code, pre, kbd, samp { font-family: var(--font-mono); }
   --accent-h:  light-dark(#2E474C, #507882);
   --border:    light-dark(#e0e0e0, #333);
   --surface:   light-dark(#f5f5f5, #252525);
-  --wordmark:  light-dark(#2E474C, #d4d4d4);
+  --wordmark:  light-dark(#345e65, #345e65);
   --code-bg:   var(--fink-bg);
   --code-text: var(--fink-text);
   --font-sans: "Inter", system-ui, sans-serif;
@@ -67,7 +67,7 @@ nav .wordmark {
   text-decoration: none;
   display: flex;
   align-items: center;
-  gap: 0.4em;
+  gap: 0.2em;
 }
 .wordmark-logo {
   height: 2.5rem;
@@ -144,7 +144,7 @@ footer {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5em;
+  gap: 0.2em;
 }
 .hero-logo {
   height: 6rem;
