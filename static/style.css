@@ -2,7 +2,7 @@
 
 /* ---------------------------------------------------------------
    ƒink website — stylesheet
-   Design: minimal, typographic, dark code blocks, light background.
+   Design: minimal, typographic, adapts to light/dark preference.
    Token colours for syntax highlighting are at the bottom.
 --------------------------------------------------------------- */
 
@@ -11,12 +11,13 @@
 code, pre, kbd, samp { font-family: var(--font-mono); }
 
 :root {
-  --bg:        #ffffff;
-  --text:      #2a2a2a;
-  --muted:     #666;
-  --accent:    #005f5f;
-  --accent-h:  #004444;
-  --border:    #e0e0e0;
+  --bg:        light-dark(#ffffff, #252525);
+  --text:      light-dark(#2a2a2a, #d4d4d4);
+  --muted:     light-dark(#666, #999);
+  --accent:    #3D5C63;
+  --accent-h:  light-dark(#2E474C, #507882);
+  --border:    light-dark(#e0e0e0, #333);
+  --surface:   light-dark(#f5f5f5, #252525);
   --code-bg:   var(--fink-bg);
   --code-text: var(--fink-text);
   --font-sans: "Inter", system-ui, sans-serif;
@@ -68,7 +69,47 @@ nav .wordmark {
   width: auto;
 }
 nav a { color: var(--muted); font-size: 0.95rem; }
-nav a:hover { color: var(--accent); text-decoration: none; }
+nav a:hover { color: var(--accent-h); text-decoration: none; }
+
+/* --- Theme picker ------------------------------------------- */
+.theme-picker { position: relative; }
+.theme-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+}
+.theme-toggle:hover { color: var(--accent-h); }
+.theme-toggle svg { width: 1.2rem; height: 1.2rem; }
+.theme-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 0.25rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  min-width: 7rem;
+  z-index: 100;
+}
+.theme-menu.open { display: flex; flex-direction: column; }
+.theme-menu button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.4rem 0.75rem;
+  text-align: left;
+  font-size: 0.85rem;
+  font-family: var(--font-sans);
+  color: var(--text);
+}
+.theme-menu button:hover { background: var(--surface); }
+.theme-menu button.active { font-weight: 700; color: var(--accent-h); }
 
 /* --- Main / footer ------------------------------------------ */
 main { flex: 1; }
@@ -135,7 +176,7 @@ footer {
   color: var(--accent);
   border: 1.5px solid var(--accent);
 }
-.btn-outline:hover { background: var(--accent); color: #fff; }
+.btn-outline:hover { background: var(--accent-h); color: #fff; }
 
 /* --- Features grid ------------------------------------------ */
 .features {
@@ -168,7 +209,7 @@ footer {
 
 /* --- Status banner ------------------------------------------ */
 .status-banner {
-  background: #f5f5f5;
+  background: var(--surface);
   border-top: 1px solid var(--border);
   padding: 1.5rem 2rem;
   text-align: center;
@@ -251,7 +292,9 @@ footer {
   margin-bottom: 1rem;
   padding-bottom: 0.3rem;
   border-bottom: 1px solid var(--border);
+  color: var(--accent-h);
 }
+.prose h2 a { color: inherit; }
 .prose h3 { font-size: 1.1rem; font-weight: 700; margin-top: 2rem; margin-bottom: 0.5rem; }
 .prose h4 { font-size: 1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
 .prose p { margin-bottom: 1rem; }
@@ -268,14 +311,14 @@ footer {
 .prose code {
   font-family: var(--font-mono);
   font-size: 0.85em;
-  background: #f3f3f3;
+  background: var(--surface);
   padding: 0.1em 0.35em;
   border-radius: 3px;
 }
 .prose a { color: var(--accent); }
 .prose table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
 .prose th, .prose td { border: 1px solid var(--border); padding: 0.4rem 0.7rem; text-align: left; }
-.prose th { background: #f5f5f5; font-weight: 600; }
+.prose th { background: var(--surface); font-weight: 600; }
 
 /* --- Code blocks -------------------------------------------- */
 pre.code-block {

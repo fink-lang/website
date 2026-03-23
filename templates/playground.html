@@ -1,33 +1,34 @@
-<!DOCTYPE html>
-<!-- Playground shell — embeds the fink-lang/playground fragment artifact.
-     Provides the --fink-editor-* CSS variables, monaco.css, and Hack font
-     as required by the fragment contract (see fink-lang/playground src/index.html).
-     The fragment is fetched from /playground/fragment.html and injected at runtime. -->
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Playground — ƒink</title>
-  <link rel="icon" type="image/png" sizes="32x32" href="{{ root }}favicon-32.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="{{ root }}favicon-192.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="{{ root }}apple-touch-icon.png">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hack-font@3/build/web/hack.css">
+{# Playground shell — embeds the fink-lang/playground fragment artifact.
+   Provides the --fink-editor-* CSS variables and Hack font as required
+   by the fragment contract (see fink-lang/playground src/index.html).
+   The fragment is injected at build time via the "fragment" frontmatter key. #}
+{% extends "base.html" %}
+
+{% block head %}
   <link rel="stylesheet" href="/playground/monaco.css">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    /* ── fink editor theme variables ── */
+    /* ── fink editor theme variables — derived from site theme ──
+       Chrome variables use var() refs to site theme.
+       Syntax colour variables also use var() refs; the playground JS
+       must resolve these to hex via getComputedStyle before passing
+       to Monaco (see fink-lang/playground). */
     :root {
-      --fink-editor-bg:           #1e1e1e;
-      --fink-editor-fg:           #cccccc;
-      --fink-editor-fg-dim:       #858585;
-      --fink-editor-surface:      #252526;
-      --fink-editor-border:       #3e3e42;
-      --fink-editor-btn-bg:       #0e639c;
-      --fink-editor-btn-hover:    #1177bb;
-      --fink-editor-ok:           #4ec9b0;
-      --fink-editor-err:          #f44747;
+      --fink-editor-bg:           var(--bg);
+      --fink-editor-fg:           var(--text);
+      --fink-editor-fg-dim:       var(--muted);
+      --fink-editor-surface:      var(--surface);
+      --fink-editor-border:       var(--border);
+      --fink-editor-btn-bg:       var(--accent);
+      --fink-editor-btn-hover:    var(--accent-h);
+      --fink-editor-ok:           light-dark(#098658, #4ec9b0);
+      --fink-editor-err:          light-dark(#e51400, #f44747);
+      --fink-editor-highlight-bg:     light-dark(#E8E8E8, #3A3A3A);
+      --fink-editor-highlight-border: light-dark(#C0C0C0, #555555);
 
+      /* Syntax colours: hardcoded dark hex for now.
+         Monaco parses these directly and cannot resolve light-dark() / var().
+         TODO: update playground repo to resolve computed values, then switch
+         these to var(--fink-*) refs for full light/dark support. */
       --fink-editor-color-fn:       #DCDCAA;
       --fink-editor-color-ident:    #4FC1FF;
       --fink-editor-color-rec-key:  #9CDCFE;
@@ -46,36 +47,17 @@
       --fink-editor-color-bracket3: #4A9DF8;
     }
 
-    html, body {
-      height: 100%;
-      overflow: hidden;
-      background: var(--fink-editor-bg);
-      color: var(--fink-editor-fg);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
+    /* Playground fills the viewport below the nav */
+    body { height: 100vh; min-height: 0; overflow: hidden; }
+    main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    #playground-mount { flex: 1; min-height: 0; }
   </style>
-</head>
-<body style="height:100%;display:flex;flex-direction:column">
-  <header style="display:flex;align-items:center;gap:10px;padding:0 14px;height:36px;background:var(--fink-editor-surface);border-bottom:1px solid var(--fink-editor-border);flex-shrink:0">
-    <a href="{{ root }}" style="display:flex;align-items:center;gap:6px;text-decoration:none;color:var(--fink-editor-fg-dim);font-size:13px">
-      <img src="{{ root }}favicon-192.png" alt="" height="18">ƒink
-    </a>
-    <span style="font-size:13px;font-weight:600;color:var(--fink-editor-fg)">Playground</span>
-  </header>
-  <div id="playground-mount" style="flex:1;min-height:0">
-    <script>
-      fetch('/playground/fragment.html').then(r => r.text()).then(html => {
-        const mount = document.getElementById('playground-mount')
-        mount.innerHTML = html
-        for (const s of mount.querySelectorAll('script')) {
-          const ns = document.createElement('script')
-          if (s.type) ns.type = s.type
-          if (s.src) ns.src = s.src
-          else ns.textContent = s.textContent
-          s.replaceWith(ns)
-        }
-      })
-    </script>
+{% endblock head %}
+
+{% block content %}
+  <div id="playground-mount">
+    {{ fragment | safe }}
   </div>
-</body>
-</html>
+{% endblock content %}
+
+{% block footer %}{% endblock footer %}

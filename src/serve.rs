@@ -14,7 +14,7 @@ use std::path::{Path, PathBuf};
 use anyhow::Result;
 use tiny_http::{Response, Server};
 
-const PID_FILE: &str = "build/.server.pid";
+const PID_FILE: &str = "build/site/.server.pid";
 
 pub fn stop() -> Result<()> {
   let pid_str = fs::read_to_string(PID_FILE)
@@ -119,7 +119,9 @@ fn mime_type(ext: &str) -> &'static str {
     "png"  => "image/png",
     "svg"  => "image/svg+xml",
     "ico"  => "image/x-icon",
+    "wasm" => "application/wasm",
     "woff2"=> "font/woff2",
+    "ttf"  => "font/ttf",
     _      => "application/octet-stream",
   }
 }

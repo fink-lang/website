@@ -3,8 +3,13 @@ name = "fink-site"
 version = "0.1.0"
 edition = "2024"
 
+[package.metadata.assets.playground]
+url = "https://github.com/fink-lang/playground/releases/download/{version}/playground.tar.gz"
+version = "v1.9.0"
+dest = "build/assets/playground"
+
 [dependencies]
-fink = { git = "https://github.com/fink-lang/fink.git", branch = "name-resolution" }
+fink = { git = "https://github.com/fink-lang/fink.git", branch = "main" }
 pulldown-cmark = "0.13"
 tera = "1"
 walkdir = "2"
