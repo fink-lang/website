@@ -177,12 +177,11 @@ fn collect_ast_anns<'src>(node: &'src Node<'src>, anns: &mut Annotations, depth:
       ann_range(anns, close.loc.start.idx as usize, close.loc.end.idx as usize, br);
       for child in &items.items {
         if let NodeKind::Arm { lhs, body, .. } = &child.kind {
-          if let Some(first_lhs) = lhs.items.first() {
-            if matches!(&first_lhs.kind, NodeKind::Ident(_)) {
-              // shorthand {foo} = variable ref; key:val = record key
-              ann_node(anns, first_lhs, if body.items.is_empty() { "ident" } else { "rec-key" });
-            }
+          if matches!(&lhs.kind, NodeKind::Ident(_)) {
+            // shorthand {foo} = variable ref; key:val = record key
+            ann_node(anns, lhs, if body.items.is_empty() { "ident" } else { "rec-key" });
           }
+          collect_ast_anns(lhs, anns, depth + 1);
           for expr in &body.items { collect_ast_anns(expr, anns, depth + 1); }
         } else {
           collect_ast_anns(child, anns, depth + 1);
@@ -218,7 +217,7 @@ fn collect_ast_anns<'src>(node: &'src Node<'src>, anns: &mut Annotations, depth:
       for child in children { collect_ast_anns(child, anns, depth); }
     }
 
-    NodeKind::Patterns(children) => {
+    NodeKind::Module(children) | NodeKind::Patterns(children) => {
       for child in &children.items { collect_ast_anns(child, anns, depth); }
     }
 
@@ -247,12 +246,12 @@ fn collect_ast_anns<'src>(node: &'src Node<'src>, anns: &mut Annotations, depth:
     }
 
     NodeKind::Match { subjects, arms, .. } => {
-      collect_ast_anns(subjects, anns, depth);
+      for subj in &subjects.items { collect_ast_anns(subj, anns, depth); }
       for arm in &arms.items { collect_ast_anns(arm, anns, depth); }
     }
 
     NodeKind::Arm { lhs, body, .. } => {
-      for expr in &lhs.items { collect_ast_anns(expr, anns, depth); }
+      collect_ast_anns(lhs, anns, depth);
       for expr in &body.items { collect_ast_anns(expr, anns, depth); }
     }
 
