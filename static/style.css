@@ -45,6 +45,10 @@ a:hover { color: var(--accent-h); text-decoration: underline; }
 header {
   border-bottom: 1px solid var(--border);
   padding: 0 2rem;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 50;
 }
 nav {
   max-width: calc(var(--max-w) + 14rem);
