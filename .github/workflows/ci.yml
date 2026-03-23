@@ -47,7 +47,7 @@ jobs:
         # fetches fragment.html at runtime — no patching required.
         run: |
           mkdir -p website/build/playground
-          curl -sL https://github.com/fink-lang/playground/releases/download/v1.7.0/playground.tar.gz \
+          curl -sL https://github.com/fink-lang/playground/releases/download/v1.7.1/playground.tar.gz \
             | tar -xzf - -C website/build/playground --exclude='./index.html'
 
       - name: Verify output
