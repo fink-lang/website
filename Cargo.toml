@@ -5,7 +5,7 @@ edition = "2024"
 
 [package.metadata.assets.playground]
 url = "https://github.com/fink-lang/playground/releases/download/{version}/playground.tar.gz"
-version = "v1.10.2"
+version = "v1.11.0"
 dest = ".deps/playground"
 
 [package.metadata.assets.brand]
