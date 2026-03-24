@@ -59,6 +59,10 @@ fn main() -> Result<()> {
       print!("{}", svg::render_svg(&src));
       return Ok(());
     }
+    Some("install-deps") => {
+      install_deps()?;
+      return Ok(());
+    }
     Some("update-deps") => {
       update_deps()?;
       return Ok(());
@@ -67,10 +71,14 @@ fn main() -> Result<()> {
       check_deps()?;
       return Ok(());
     }
+    Some("clean") => {
+      clean()?;
+      return Ok(());
+    }
     Some("build") | None => {}
     Some(other) => {
       eprintln!("Unknown command: {other}");
-      eprintln!("Usage: fink-site [build | serve [port] | stop | update-deps | check-deps | svg <file>]");
+      eprintln!("Usage: fink-site [build | serve [port] | stop | install-deps | update-deps | check-deps | clean | svg <file>]");
       std::process::exit(1);
     }
   }
@@ -388,17 +396,8 @@ fn github_repo_from_url(url: &str) -> Option<String> {
   }
 }
 
-/// Run `cargo update` and download asset dependencies.
-fn update_deps() -> Result<()> {
-  println!("Running cargo update…");
-  let status = std::process::Command::new("cargo")
-    .arg("update")
-    .status()
-    .context("failed to run cargo update")?;
-  if !status.success() {
-    anyhow::bail!("cargo update failed");
-  }
-
+/// Fetch pinned asset dependencies into .deps/.
+fn fetch_asset_deps() -> Result<()> {
   let assets = parse_asset_deps()?;
 
   for dep in &assets {
@@ -432,6 +431,37 @@ fn update_deps() -> Result<()> {
     println!("No asset dependencies found in Cargo.toml");
   }
 
+  Ok(())
+}
+
+/// Install pinned dependencies (asset deps only, no cargo update).
+fn install_deps() -> Result<()> {
+  fetch_asset_deps()
+}
+
+/// Update all dependencies: cargo update + re-fetch asset deps.
+fn update_deps() -> Result<()> {
+  println!("Running cargo update…");
+  let status = std::process::Command::new("cargo")
+    .arg("update")
+    .status()
+    .context("failed to run cargo update")?;
+  if !status.success() {
+    anyhow::bail!("cargo update failed");
+  }
+
+  fetch_asset_deps()
+}
+
+/// Remove all build output.
+fn clean() -> Result<()> {
+  let build_dir = "build";
+  if Path::new(build_dir).exists() {
+    fs::remove_dir_all(build_dir).context("failed to remove build dir")?;
+    println!("Removed {build_dir}/");
+  } else {
+    println!("Nothing to clean.");
+  }
   Ok(())
 }
 
@@ -552,6 +582,20 @@ fn check_deps() -> Result<()> {
       None => {
         println!("  {} {} (failed to query GitHub API)", dep.name, dep.version);
       }
+    }
+  }
+
+  // Check crates.io dependencies via cargo outdated
+  println!();
+  let outdated = std::process::Command::new("cargo")
+    .args(["outdated", "--root-deps-only"])
+    .status();
+
+  match outdated {
+    Ok(s) if s.success() => {}
+    Ok(_) => { all_current = false; }
+    Err(_) => {
+      println!("  cargo outdated not installed — run: cargo install cargo-outdated");
     }
   }
 
