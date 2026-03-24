@@ -11,6 +11,7 @@
 use pulldown_cmark::{CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, TagEnd, html};
 
 use crate::highlight;
+use crate::playground;
 
 /// A single TOC entry extracted from a ## heading.
 pub struct TocEntry {
@@ -97,9 +98,20 @@ pub fn render(md: &str) -> String {
         in_fink_block = false;
         let src = fink_buf.trim_end_matches('\n');
         let highlighted = highlight::highlight(src);
+        let hash = playground::encode_source(src);
+        // Wrap in container with playground link button (external-link icon)
         let html = format!(
-          "<pre class=\"code-block\"><code class=\"language-fink\">{}</code></pre>\n",
-          highlighted
+          "<div class=\"code-block-wrap\">\
+           <a class=\"playground-link\" href=\"/playground/#{hash}\" \
+           title=\"Open in playground\" aria-label=\"Open in playground\">\
+           <svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 135 135\">\
+           <g transform=\"translate(0,3)\">\
+           <path fill=\"currentColor\" d=\"M 7.6,102.4 C 34.3,81.4 46.3,56 57.8,36.3 70.8,14.2 90.6,8.3 111.9,25.6 103.8,25.3 98.5,37.4 84.1,53.9 69.7,70.5 44.6,92.5 7.6,102.4Z\"/>\
+           <path fill=\"currentColor\" d=\"M 97.9,42.1 C 105.6,70.6 101.8,110.8 5.7,115.6 64.5,89.8 93.6,50 97.9,42.1Z\"/>\
+           <path fill=\"#faa343\" d=\"m 102.5,50.9 c -4.6,-22.7 10.2,-26.9 26.5,-21.5 -8.2,2.8 -20.2,8 -26.5,21.5z\"/>\
+           </g></svg></a>\
+           <pre class=\"code-block\"><code class=\"language-fink\">{highlighted}</code></pre>\
+           </div>\n"
         );
         events.push(Event::Html(html.into()));
       }
