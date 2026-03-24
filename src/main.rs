@@ -16,6 +16,7 @@
 
 mod highlight;
 mod markdown;
+mod playground;
 mod serve;
 mod svg;
 
