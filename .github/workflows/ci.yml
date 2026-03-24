@@ -2,9 +2,6 @@
 #
 # On every push / PR: build and verify output exists.
 # On push to main: also deploy to GitHub Pages.
-#
-# The fink compiler is checked out side-by-side from main
-# to satisfy the path dependency in Cargo.toml.
 
 name: ci
 
@@ -19,15 +16,6 @@ jobs:
     steps:
       - name: Check out website
         uses: actions/checkout@v4
-        with:
-          path: website
-
-      - name: Check out fink compiler
-        uses: actions/checkout@v4
-        with:
-          repository: fink-lang/fink
-          ref: main
-          path: fink
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -35,31 +23,22 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('website/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
 
-      - name: Fetch dependencies
-        working-directory: website
-        run: cargo run --release -- update-deps
+      - name: Install dependencies
+        run: make deps-install
 
       - name: Build site
-        working-directory: website
-        run: cargo run --release
+        run: make build
 
-      - name: Verify output
-        working-directory: website
-        run: |
-          test -f build/site/index.html
-          test -f build/site/docs/index.html
-          test -f build/site/404.html
-          test -f build/site/CNAME
-          test -f build/site/playground/index.html
-          test -f build/site/playground/playground.js
+      - name: Test
+        run: make test
 
       - name: Upload pages artifact
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: website/build/site
+          path: build/site
 
   deploy:
     needs: build

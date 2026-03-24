@@ -543,7 +543,7 @@ checksum = "5baebc0774151f905a1a2cc41989300b1e6fbb29aff0ceffa1064fdd3088d582"
 [[package]]
 name = "fink"
 version = "0.0.0"
-source = "git+https://github.com/fink-lang/fink.git?tag=v0.1.0#1a61a6b21aa0ad51c2f03e4062df64f774a17ae1"
+source = "git+https://github.com/fink-lang/fink.git?tag=v0.2.0#537724226857ce287deb080a78cfd5dee7ff3bac"
 dependencies = [
  "dap",
  "tokio",
