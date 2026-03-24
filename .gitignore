@@ -2,9 +2,8 @@
 
 /target
 /build
+/.deps
 
 /.claude/settings.local.json
 /.claude.local/
 
-/playground/node_modules/
-/playground/src/placeholder.wasm

@@ -6,13 +6,19 @@ edition = "2024"
 [package.metadata.assets.playground]
 url = "https://github.com/fink-lang/playground/releases/download/{version}/playground.tar.gz"
 version = "v1.9.0"
-dest = "build/assets/playground"
+dest = ".deps/playground"
+
+[package.metadata.assets.brand]
+url = "https://github.com/fink-lang/brand/releases/download/{version}/brand-assets.tar.gz"
+version = "v1.0.0"
+dest = ".deps/brand"
 
 [dependencies]
-fink = { git = "https://github.com/fink-lang/fink.git", branch = "main" }
+fink = { git = "https://github.com/fink-lang/fink.git", tag = "v0.1.0" }
 pulldown-cmark = "0.13"
 tera = "1"
 walkdir = "2"
 anyhow = "1"
 tiny_http = "0.12"
 flate2 = "1"
+image = { version = "0.25", default-features = false, features = ["png"] }

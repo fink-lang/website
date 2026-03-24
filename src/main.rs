@@ -5,14 +5,14 @@
 // build/site/index.html for the root page). Static files in static/ are copied
 // verbatim.
 //
-// Downloaded dependencies (e.g. playground artifact) live in build/assets/.
-// Only build/site/ is wiped on each build; build/assets/ is preserved.
+// Downloaded dependencies (e.g. playground, brand) live in .deps/.
+// Only build/site/ is wiped on each build; .deps/ is preserved.
 //
 // Content file frontmatter (YAML between --- markers) supports:
 //   title: string       — page <title> and heading
 //   template: string    — Tera template name without extension (default: "page")
-//   fragment: path      — HTML fragment to inject (relative to ASSETS_DIR)
-//   asset_dir: path     — copies runtime files from ASSETS_DIR/<path> to output
+//   fragment: path      — HTML fragment to inject (relative to .deps/)
+//   asset_dir: path     — copies runtime files from .deps/<path> to output
 
 mod highlight;
 mod markdown;
@@ -32,7 +32,7 @@ const CONTENT_DIR: &str = "content";
 const TEMPLATE_DIR: &str = "templates";
 const STATIC_DIR: &str = "static";
 const SITE_DIR: &str = "build/site";
-const ASSETS_DIR: &str = "build/assets";
+const DEPS_DIR: &str = ".deps";
 const DEFAULT_PORT: u16 = 8080;
 
 fn main() -> Result<()> {
@@ -63,10 +63,14 @@ fn main() -> Result<()> {
       update_deps()?;
       return Ok(());
     }
+    Some("check-deps") => {
+      check_deps()?;
+      return Ok(());
+    }
     Some("build") | None => {}
     Some(other) => {
       eprintln!("Unknown command: {other}");
-      eprintln!("Usage: fink-site [build | serve [port] | stop | update-deps | svg <file>]");
+      eprintln!("Usage: fink-site [build | serve [port] | stop | update-deps | check-deps | svg <file>]");
       std::process::exit(1);
     }
   }
@@ -96,6 +100,9 @@ fn build() -> Result<()> {
 
   // Copy static assets
   copy_static()?;
+
+  // Copy brand assets from .deps/brand/ into build/site/
+  copy_brand()?;
 
   println!("Build complete → {}/", SITE_DIR);
   Ok(())
@@ -168,7 +175,7 @@ fn render_page(md_path: &Path, tera: &Tera) -> Result<()> {
 
   // Load HTML fragment from assets if requested
   let fragment = if let Some(frag_path) = &fragment_path {
-    let full = Path::new(ASSETS_DIR).join(frag_path);
+    let full = Path::new(DEPS_DIR).join(frag_path);
     let html = fs::read_to_string(&full)
       .with_context(|| format!("failed to read fragment {}", full.display()))?;
     Some(html)
@@ -178,7 +185,7 @@ fn render_page(md_path: &Path, tera: &Tera) -> Result<()> {
 
   // Copy runtime asset directory if requested (e.g. JS/WASM/CSS files)
   if let Some(dir) = &asset_dir {
-    let src = Path::new(ASSETS_DIR).join(dir);
+    let src = Path::new(DEPS_DIR).join(dir);
     let dest_dir = Path::new(SITE_DIR).join(dir);
     if src.is_dir() {
       copy_dir(&src, &dest_dir)
@@ -265,29 +272,72 @@ fn copy_dir(src: &Path, dest: &Path) -> Result<()> {
   Ok(())
 }
 
-// ---- dependency management -------------------------------------------------
+// ---- brand assets ----------------------------------------------------------
 
-/// Run `cargo update` and download asset dependencies listed in Cargo.toml
-/// under [package.metadata.assets.<name>].
-fn update_deps() -> Result<()> {
-  // 1. Run cargo update for crate dependencies
-  println!("Running cargo update…");
-  let status = std::process::Command::new("cargo")
-    .arg("update")
-    .status()
-    .context("failed to run cargo update")?;
-  if !status.success() {
-    anyhow::bail!("cargo update failed");
+const BRAND_DIR: &str = ".deps/brand";
+
+/// Copy brand assets from .deps/brand/ into the site output directory.
+/// SVGs are copied directly; PNGs are downscaled to the sizes needed for
+/// favicons, apple-touch-icon, and social image.
+fn copy_brand() -> Result<()> {
+  let brand = Path::new(BRAND_DIR);
+  if !brand.exists() {
+    // Brand dep not fetched — static/ fallbacks will be used
+    return Ok(());
   }
 
-  // 2. Download asset dependencies from Cargo.toml metadata
+  let site = Path::new(SITE_DIR);
+
+  // Logo SVG (nav, hero, SVG favicon)
+  let logo_src = brand.join("assets/fink-rect-no-bg.svg");
+  anyhow::ensure!(logo_src.exists(), "required brand asset missing: {}", logo_src.display());
+  fs::copy(&logo_src, site.join("logo.svg"))?;
+
+  // Favicons downscaled from the no-bg PNG (transparent)
+  let icon_src = brand.join("assets/fink-rect-no-bg.png");
+  anyhow::ensure!(icon_src.exists(), "required brand asset missing: {}", icon_src.display());
+  downscale_png(&icon_src, &site.join("favicon-32.png"), 32)?;
+  downscale_png(&icon_src, &site.join("favicon-192.png"), 192)?;
+
+  // Apple touch icon from rounded variant (iOS masks transparent icons to black)
+  let apple_src = brand.join("assets/fink-rounded.png");
+  anyhow::ensure!(apple_src.exists(), "required brand asset missing: {}", apple_src.display());
+  downscale_png(&apple_src, &site.join("apple-touch-icon.png"), 180)?;
+
+  // Social / og:image from wordmark (already 1200×630)
+  let social_src = brand.join("assets/fink-wordmark.png");
+  anyhow::ensure!(social_src.exists(), "required brand asset missing: {}", social_src.display());
+  fs::copy(&social_src, site.join("social.png"))?;
+
+  Ok(())
+}
+
+/// Downscale a PNG to a square of the given size using Lanczos3 filtering.
+fn downscale_png(src: &Path, dest: &Path, size: u32) -> Result<()> {
+  let img = image::open(src)
+    .with_context(|| format!("failed to open {}", src.display()))?;
+  let resized = img.resize_exact(size, size, image::imageops::FilterType::Lanczos3);
+  resized.save(dest)
+    .with_context(|| format!("failed to write {}", dest.display()))?;
+  Ok(())
+}
+
+// ---- dependency management -------------------------------------------------
+
+struct AssetDep {
+  name: String,
+  url: String,
+  version: String,
+  dest: String,
+}
+
+/// Parse [package.metadata.assets.*] entries from Cargo.toml.
+fn parse_asset_deps() -> Result<Vec<AssetDep>> {
   let toml_str = fs::read_to_string("Cargo.toml")
     .context("failed to read Cargo.toml")?;
 
-  // Parse [package.metadata.assets.*] entries.
-  // Each has: url (with {version} placeholder), version, dest
   let mut in_asset: Option<String> = None;
-  let mut assets: Vec<(String, String, String, String)> = vec![]; // (name, url, version, dest)
+  let mut assets: Vec<AssetDep> = vec![];
   let mut url = String::new();
   let mut version = String::new();
   let mut dest = String::new();
@@ -295,10 +345,9 @@ fn update_deps() -> Result<()> {
   for line in toml_str.lines() {
     let trimmed = line.trim();
     if let Some(rest) = trimmed.strip_prefix("[package.metadata.assets.") {
-      // Save previous asset if any
       if let Some(name) = in_asset.take() {
         if !url.is_empty() && !version.is_empty() && !dest.is_empty() {
-          assets.push((name, url.clone(), version.clone(), dest.clone()));
+          assets.push(AssetDep { name, url: url.clone(), version: version.clone(), dest: dest.clone() });
         }
       }
       in_asset = Some(rest.trim_end_matches(']').to_string());
@@ -320,21 +369,47 @@ fn update_deps() -> Result<()> {
   }
   if let Some(name) = in_asset {
     if !url.is_empty() && !version.is_empty() && !dest.is_empty() {
-      assets.push((name, url, version, dest));
+      assets.push(AssetDep { name, url, version, dest });
     }
   }
 
-  for (name, url_template, ver, dest_dir) in &assets {
-    let resolved_url = url_template.replace("{version}", ver);
-    println!("Fetching {name} {ver}…");
+  Ok(assets)
+}
 
-    // Clean and recreate dest
-    if Path::new(dest_dir).exists() {
-      fs::remove_dir_all(dest_dir)?;
+/// Extract "owner/repo" from a GitHub release URL.
+fn github_repo_from_url(url: &str) -> Option<String> {
+  // https://github.com/{owner}/{repo}/releases/download/...
+  let rest = url.strip_prefix("https://github.com/")?;
+  let parts: Vec<&str> = rest.splitn(4, '/').collect();
+  if parts.len() >= 3 && parts[2] == "releases" {
+    Some(format!("{}/{}", parts[0], parts[1]))
+  } else {
+    None
+  }
+}
+
+/// Run `cargo update` and download asset dependencies.
+fn update_deps() -> Result<()> {
+  println!("Running cargo update…");
+  let status = std::process::Command::new("cargo")
+    .arg("update")
+    .status()
+    .context("failed to run cargo update")?;
+  if !status.success() {
+    anyhow::bail!("cargo update failed");
+  }
+
+  let assets = parse_asset_deps()?;
+
+  for dep in &assets {
+    let resolved_url = dep.url.replace("{version}", &dep.version);
+    println!("Fetching {} {}…", dep.name, dep.version);
+
+    if Path::new(&dep.dest).exists() {
+      fs::remove_dir_all(&dep.dest)?;
     }
-    fs::create_dir_all(dest_dir)?;
+    fs::create_dir_all(&dep.dest)?;
 
-    // Download and extract tarball
     let status = std::process::Command::new("curl")
       .args(["-sL", &resolved_url])
       .stdout(std::process::Stdio::piped())
@@ -342,19 +417,146 @@ fn update_deps() -> Result<()> {
       .context("failed to run curl")?;
 
     let tar_status = std::process::Command::new("tar")
-      .args(["-xzf", "-", "-C", dest_dir])
+      .args(["-xzf", "-", "-C", &dep.dest])
       .stdin(status.stdout.unwrap())
       .status()
       .context("failed to run tar")?;
 
     if !tar_status.success() {
-      anyhow::bail!("failed to download/extract {name} from {resolved_url}");
+      anyhow::bail!("failed to download/extract {} from {resolved_url}", dep.name);
     }
-    println!("  → {dest_dir}/");
+    println!("  → {}/", dep.dest);
   }
 
   if assets.is_empty() {
     println!("No asset dependencies found in Cargo.toml");
+  }
+
+  Ok(())
+}
+
+/// Query the latest release tag for a GitHub repo. Returns None on failure.
+fn github_latest_tag(repo: &str) -> Option<String> {
+  let output = std::process::Command::new("curl")
+    .args(["-sf", &format!("https://api.github.com/repos/{repo}/releases/latest")])
+    .output()
+    .ok()?;
+
+  if !output.status.success() { return None; }
+
+  // Extract tag_name from JSON (simple string search to avoid a JSON dep)
+  // Looks for: "tag_name": "v1.2.3"
+  let body = String::from_utf8_lossy(&output.stdout);
+  body.find("\"tag_name\"").and_then(|i| {
+    let after_key = &body[i + "\"tag_name\"".len()..];
+    let val_start = after_key.find('"')? + 1;
+    let val_end = after_key[val_start..].find('"')?;
+    Some(after_key[val_start..val_start + val_end].to_string())
+  })
+}
+
+/// Parse git dependencies with tag pins from Cargo.toml.
+/// Returns (name, repo "owner/repo", pinned tag).
+fn parse_git_deps() -> Result<Vec<(String, String, String)>> {
+  let toml_str = fs::read_to_string("Cargo.toml")
+    .context("failed to read Cargo.toml")?;
+
+  let mut deps = vec![];
+  for line in toml_str.lines() {
+    let trimmed = line.trim();
+    // Match: name = { git = "https://github.com/owner/repo.git", tag = "v1.0.0" }
+    if let Some((key, value)) = trimmed.split_once('=') {
+      let name = key.trim();
+      let val = value.trim();
+      if val.contains("git =") && val.contains("tag =") {
+        let git_url = extract_field(val, "git");
+        let tag = extract_field(val, "tag");
+        if let (Some(url), Some(tag)) = (git_url, tag) {
+          if let Some(repo) = github_repo_from_git_url(&url) {
+            deps.push((name.to_string(), repo, tag));
+          }
+        }
+      }
+    }
+  }
+  Ok(deps)
+}
+
+/// Extract a quoted field value from an inline TOML table, e.g. `git` from `{ git = "..." }`.
+fn extract_field(s: &str, field: &str) -> Option<String> {
+  let pattern = format!("{field} = \"");
+  let start = s.find(&pattern)? + pattern.len();
+  let end = s[start..].find('"')?;
+  Some(s[start..start + end].to_string())
+}
+
+/// Extract "owner/repo" from a GitHub .git URL.
+fn github_repo_from_git_url(url: &str) -> Option<String> {
+  // https://github.com/owner/repo.git
+  let rest = url.strip_prefix("https://github.com/")?;
+  let rest = rest.strip_suffix(".git").unwrap_or(rest);
+  let parts: Vec<&str> = rest.splitn(3, '/').collect();
+  if parts.len() >= 2 {
+    Some(format!("{}/{}", parts[0], parts[1]))
+  } else {
+    None
+  }
+}
+
+/// Check for newer releases of all dependencies via the GitHub API.
+fn check_deps() -> Result<()> {
+  let assets = parse_asset_deps()?;
+  let git_deps = parse_git_deps()?;
+
+  if assets.is_empty() && git_deps.is_empty() {
+    println!("No dependencies found in Cargo.toml");
+    return Ok(());
+  }
+
+  let mut all_current = true;
+
+  // Check git dependencies (crates pinned to tags)
+  for (name, repo, tag) in &git_deps {
+    match github_latest_tag(repo) {
+      Some(ref latest) if latest == tag => {
+        println!("  {name} {tag} ✓");
+      }
+      Some(ref latest) => {
+        println!("  {name} {tag} → {latest} available");
+        all_current = false;
+      }
+      None => {
+        println!("  {name} {tag} (failed to query GitHub API)");
+      }
+    }
+  }
+
+  // Check asset dependencies
+  for dep in &assets {
+    let repo = match github_repo_from_url(&dep.url) {
+      Some(r) => r,
+      None => {
+        println!("  {} {} (skipped — not a GitHub release URL)", dep.name, dep.version);
+        continue;
+      }
+    };
+
+    match github_latest_tag(&repo) {
+      Some(ref tag) if tag == &dep.version => {
+        println!("  {} {} ✓", dep.name, dep.version);
+      }
+      Some(ref tag) => {
+        println!("  {} {} → {tag} available", dep.name, dep.version);
+        all_current = false;
+      }
+      None => {
+        println!("  {} {} (failed to query GitHub API)", dep.name, dep.version);
+      }
+    }
+  }
+
+  if all_current {
+    println!("All dependencies are up to date.");
   }
 
   Ok(())
