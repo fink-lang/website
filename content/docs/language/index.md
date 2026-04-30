@@ -691,19 +691,32 @@ match 'hello world':
 
 ## Modules
 
-A file is a module. Bind the exports you care about from the result of `import`.
+A file is a module. Names bound at the top level are its exports.
 
 ```fink
-{read, write} = import './files.fnk'
-{add, mul}    = import './math.fnk'
-{set}         = import 'std/set.fnk'
+# ./greet.fnk
+{stdout, write} = import 'std/io.fnk'
+
+hello = fn name:
+  write stdout, 'hello ${name}'
 ```
 
-Names bound at the top level of a module are exported by default; destructuring imports picks a subset.
+`hello` is exported. The `stdout` and `write` names are bindings local to this module — they were brought in by `import` and are not re-exported.
+
+Another module imports it by destructuring the result of `import`:
+
+```fink
+# ./example.fnk
+{hello} = import './greet.fnk'
+
+main = fn first_name, last_name:
+  hello '${first_name} ${last_name}'
+
+```
 
 Path resolution:
 
-- `./foo.fnk` and `../bar.fnk` — relative to the importing file.
+- `./example.fnk` and `../bar.fnk` — relative to the importing file.
 - `std/foo.fnk` — bundled standard library (e.g. `std/io.fnk`, `std/list.fnk`, `std/set.fnk`, `std/str.fnk`).
 
 ---
