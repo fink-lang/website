@@ -4,6 +4,8 @@
 /build
 /.deps
 
-/.claude/settings.local.json
-/.claude.local/
+/.claude/
 
+
+
+/.brain/
