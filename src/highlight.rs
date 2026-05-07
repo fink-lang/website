@@ -33,7 +33,7 @@
 //   .cmt     — comments
 //   .ph      — ? partial application placeholder
 
-use fink::ast::{CmpPart, Node, NodeKind};
+use fink::ast::{Ast, AstId, CmpPart, Node, NodeKind};
 use fink::lexer::{TokenKind, tokenize_with_seps};
 use fink::parser;
 
@@ -104,9 +104,10 @@ fn ann_range(anns: &mut Annotations, start: usize, end: usize, class: &'static s
   anns.add(start, end, class, 10);
 }
 
-fn resolve_callee<'a>(node: &'a Node<'a>) -> &'a Node<'a> {
+fn resolve_callee<'src, 'a>(ast: &'a Ast<'src>, id: AstId) -> &'a Node<'src> {
+  let node = ast.nodes.get(id);
   match &node.kind {
-    NodeKind::Member { rhs, .. } => resolve_callee(rhs),
+    NodeKind::Member { rhs, .. } => resolve_callee(ast, *rhs),
     _ => node,
   }
 }
@@ -120,15 +121,17 @@ fn br_class(depth: usize) -> &'static str {
   }
 }
 
-fn collect_ast_anns<'src>(node: &'src Node<'src>, anns: &mut Annotations, depth: usize) {
+fn collect_ast_anns<'src>(ast: &Ast<'src>, id: AstId, anns: &mut Annotations, depth: usize) {
+  let node = ast.nodes.get(id);
   match &node.kind {
 
     NodeKind::Apply { func, args } => {
-      let callee = resolve_callee(func);
+      let callee = resolve_callee(ast, *func);
       match &callee.kind {
         NodeKind::Ident(_) => {
           // Detect tagged literals: callee immediately adjacent to first arg
-          let tag_kind = args.items.first().and_then(|first_arg| {
+          let tag_kind = args.items.first().and_then(|&first_arg_id| {
+            let first_arg = ast.nodes.get(first_arg_id);
             if callee.loc.end.idx == first_arg.loc.start.idx {
               Some("tag")   // prefix: fmt'...'
             } else if first_arg.loc.end.idx == callee.loc.start.idx {
@@ -146,28 +149,30 @@ fn collect_ast_anns<'src>(node: &'src Node<'src>, anns: &mut Annotations, depth:
         }
         _ => {}
       }
-      collect_ast_anns(func, anns, depth);
-      for arg in &args.items { collect_ast_anns(arg, anns, depth); }
+      collect_ast_anns(ast, *func, anns, depth);
+      for &arg in args.items.iter() { collect_ast_anns(ast, arg, anns, depth); }
     }
 
     NodeKind::Pipe(children) => {
-      for child in &children.items {
+      for &child_id in children.items.iter() {
+        let child = ast.nodes.get(child_id);
         // Bare ident directly in pipe position is a function
         if matches!(&child.kind, NodeKind::Ident(_)) {
           ann_node(anns, child, "fn");
         }
-        collect_ast_anns(child, anns, depth);
+        collect_ast_anns(ast, child_id, anns, depth);
       }
     }
 
     NodeKind::Member { op, lhs, rhs } => {
       // Annotate the dot as op-dot
       ann_range(anns, op.loc.start.idx as usize, op.loc.end.idx as usize, "op-dot");
-      collect_ast_anns(lhs, anns, depth);
-      if matches!(&rhs.kind, NodeKind::Ident(_)) {
-        ann_node(anns, rhs, "prop");
+      collect_ast_anns(ast, *lhs, anns, depth);
+      let rhs_node = ast.nodes.get(*rhs);
+      if matches!(&rhs_node.kind, NodeKind::Ident(_)) {
+        ann_node(anns, rhs_node, "prop");
       } else {
-        collect_ast_anns(rhs, anns, depth);
+        collect_ast_anns(ast, *rhs, anns, depth);
       }
     }
 
@@ -175,16 +180,18 @@ fn collect_ast_anns<'src>(node: &'src Node<'src>, anns: &mut Annotations, depth:
       let br = br_class(depth);
       ann_range(anns, open.loc.start.idx as usize, open.loc.end.idx as usize, br);
       ann_range(anns, close.loc.start.idx as usize, close.loc.end.idx as usize, br);
-      for child in &items.items {
+      for &child_id in items.items.iter() {
+        let child = ast.nodes.get(child_id);
         if let NodeKind::Arm { lhs, body, .. } = &child.kind {
-          if matches!(&lhs.kind, NodeKind::Ident(_)) {
+          let lhs_node = ast.nodes.get(*lhs);
+          if matches!(&lhs_node.kind, NodeKind::Ident(_)) {
             // shorthand {foo} = variable ref; key:val = record key
-            ann_node(anns, lhs, if body.items.is_empty() { "ident" } else { "rec-key" });
+            ann_node(anns, lhs_node, if body.items.is_empty() { "ident" } else { "rec-key" });
           }
-          collect_ast_anns(lhs, anns, depth + 1);
-          for expr in &body.items { collect_ast_anns(expr, anns, depth + 1); }
+          collect_ast_anns(ast, *lhs, anns, depth + 1);
+          for &expr in body.items.iter() { collect_ast_anns(ast, expr, anns, depth + 1); }
         } else {
-          collect_ast_anns(child, anns, depth + 1);
+          collect_ast_anns(ast, child_id, anns, depth + 1);
         }
       }
     }
@@ -193,74 +200,82 @@ fn collect_ast_anns<'src>(node: &'src Node<'src>, anns: &mut Annotations, depth:
       let br = br_class(depth);
       ann_range(anns, open.loc.start.idx as usize, open.loc.end.idx as usize, br);
       ann_range(anns, close.loc.start.idx as usize, close.loc.end.idx as usize, br);
-      for child in &items.items { collect_ast_anns(child, anns, depth + 1); }
+      for &child in items.items.iter() { collect_ast_anns(ast, child, anns, depth + 1); }
     }
 
     NodeKind::Group { open, close, inner } => {
       let br = br_class(depth);
       ann_range(anns, open.loc.start.idx as usize, open.loc.end.idx as usize, br);
       ann_range(anns, close.loc.start.idx as usize, close.loc.end.idx as usize, br);
-      collect_ast_anns(inner, anns, depth + 1);
+      collect_ast_anns(ast, *inner, anns, depth + 1);
     }
 
     NodeKind::Block { name, params, body, .. } => {
-      if matches!(&name.kind, NodeKind::Ident(_)) {
-        ann_node(anns, name, "blk");
+      let name_node = ast.nodes.get(*name);
+      if matches!(&name_node.kind, NodeKind::Ident(_)) {
+        ann_node(anns, name_node, "blk");
       }
-      collect_ast_anns(params, anns, depth);
-      for expr in &body.items { collect_ast_anns(expr, anns, depth); }
+      collect_ast_anns(ast, *params, anns, depth);
+      for &expr in body.items.iter() { collect_ast_anns(ast, expr, anns, depth); }
     }
 
     // --- recurse-only nodes ---
 
     NodeKind::StrTempl { children, .. } | NodeKind::StrRawTempl { children, .. } => {
-      for child in children { collect_ast_anns(child, anns, depth); }
+      for &child in children.iter() { collect_ast_anns(ast, child, anns, depth); }
     }
 
-    NodeKind::Module(children) | NodeKind::Patterns(children) => {
-      for child in &children.items { collect_ast_anns(child, anns, depth); }
+    NodeKind::Module { exprs, .. } => {
+      for &child in exprs.items.iter() { collect_ast_anns(ast, child, anns, depth); }
+    }
+
+    NodeKind::Patterns(children) => {
+      for &child in children.items.iter() { collect_ast_anns(ast, child, anns, depth); }
     }
 
     NodeKind::InfixOp { lhs, rhs, .. }
     | NodeKind::Bind { lhs, rhs, .. }
     | NodeKind::BindRight { lhs, rhs, .. } => {
-      collect_ast_anns(lhs, anns, depth);
-      collect_ast_anns(rhs, anns, depth);
+      collect_ast_anns(ast, *lhs, anns, depth);
+      collect_ast_anns(ast, *rhs, anns, depth);
     }
 
     NodeKind::ChainedCmp(parts) => {
-      for part in parts {
-        if let CmpPart::Operand(n) = part { collect_ast_anns(n, anns, depth); }
+      for part in parts.iter() {
+        if let CmpPart::Operand(n) = part { collect_ast_anns(ast, *n, anns, depth); }
       }
     }
 
-    NodeKind::UnaryOp { operand, .. }
-    | NodeKind::Try(operand)
-    | NodeKind::Yield(operand) => { collect_ast_anns(operand, anns, depth); }
+    NodeKind::UnaryOp { operand, .. } | NodeKind::Try(operand) => {
+      collect_ast_anns(ast, *operand, anns, depth);
+    }
 
-    NodeKind::Spread { inner: Some(inner), .. } => { collect_ast_anns(inner, anns, depth); }
+    NodeKind::PostfixOp { lhs, .. } => { collect_ast_anns(ast, *lhs, anns, depth); }
+
+    NodeKind::Spread { inner: Some(inner), .. } => { collect_ast_anns(ast, *inner, anns, depth); }
 
     NodeKind::Fn { params, body, .. } => {
-      collect_ast_anns(params, anns, depth);
-      for expr in &body.items { collect_ast_anns(expr, anns, depth); }
+      collect_ast_anns(ast, *params, anns, depth);
+      for &expr in body.items.iter() { collect_ast_anns(ast, expr, anns, depth); }
     }
 
     NodeKind::Match { subjects, arms, .. } => {
-      for subj in &subjects.items { collect_ast_anns(subj, anns, depth); }
-      for arm in &arms.items { collect_ast_anns(arm, anns, depth); }
+      for &subj in subjects.items.iter() { collect_ast_anns(ast, subj, anns, depth); }
+      for &arm in arms.items.iter() { collect_ast_anns(ast, arm, anns, depth); }
     }
 
     NodeKind::Arm { lhs, body, .. } => {
-      collect_ast_anns(lhs, anns, depth);
-      for expr in &body.items { collect_ast_anns(expr, anns, depth); }
+      collect_ast_anns(ast, *lhs, anns, depth);
+      for &expr in body.items.iter() { collect_ast_anns(ast, expr, anns, depth); }
     }
 
     // Leaf nodes
-    NodeKind::Ident(_)
+    NodeKind::Ident(_) | NodeKind::SynthIdent(_)
     | NodeKind::LitBool(_) | NodeKind::LitInt(_)
     | NodeKind::LitFloat(_) | NodeKind::LitDecimal(_)
     | NodeKind::LitStr { .. }
     | NodeKind::Partial | NodeKind::Wildcard
+    | NodeKind::Token(_)
     | NodeKind::Spread { inner: None, .. } => {}
   }
 }
@@ -458,8 +473,8 @@ fn render(src: &str, anns: &mut Annotations) -> String {
 fn collect(src: &str) -> Annotations {
   let mut anns = Annotations::new();
   collect_lexer_anns(src, &mut anns);
-  if let Ok(parse_result) = parser::parse(src) {
-    collect_ast_anns(&parse_result.root, &mut anns, 1);
+  if let Ok(ast) = parser::parse(src, "snippet") {
+    collect_ast_anns(&ast, ast.root, &mut anns, 1);
   }
   anns
 }

@@ -3,12 +3,14 @@ template: home
 ---
 
 ```fink
-# Pipes and partial application
-1..10
-| filter ? % 2 == 0
-| map ? * 2
-| [..?]
-|= even_nums
+{stdout, write} = import 'std/io.fnk'
+
+main = fn foo:
+  msg = match foo:
+    'ƒink': 'little bird'
+    _:      '${foo}'
+
+  write stdout, 'Hello ${msg}!'
 ```
 
 ```fink
@@ -16,12 +18,8 @@ template: home
 classify = fn match n:
   n > 0: 'positive'
   n < 0: 'negative'
-  else:  'zero'
+  _:  'zero'
+
+classify 42
 ```
 
-```fink
-# Error handling — no exceptions
-fn fetch_user id:
-  user = try get_user id
-  Ok user.name
-```
