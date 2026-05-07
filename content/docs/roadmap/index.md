@@ -44,9 +44,9 @@ with db_ctx:
 
 Concept: see the [Execution Model](../execution-model/) §7.
 
-## Missing arithmetic operators
+## Float exponentiation
 
-`**` (power) and `/%` (divmod) parse but aren't lowered yet — using them today panics in the lowering pass. The other arithmetic operators all work end-to-end.
+`**` lowers to integer-only square-and-multiply on i64. Float operands (e.g. `2.0 ** 0.5`) need `exp` / `ln` math primitives — blocked on a `std/float.wat` that doesn't exist yet.
 
 ## Ordering operator (`<=>`)
 

@@ -58,19 +58,21 @@ false
 
 ### Integers
 
-Integer types are inferred from the literal's value and sign (the values below show the inferred type — type information isn't surfaced in tooling yet). Underscores separate digit groups and are ignored.
+Integer types are inferred from the literal's *shape* and value (the values below show the inferred type — type information isn't surfaced in tooling yet). Underscores separate digit groups and are ignored.
+
+Decimal literals belong to the **math family** (signed, mix freely with floats). Hex / octal / binary literals belong to the **bits family** (unsigned, used for masks and bit patterns; don't mix with the math family). Width is the smallest type that fits the literal's value (signed range for signed literals, unsigned range for unsigned). To convert across families, use the std-lib helpers `int(x)` / `uint(x)` from `std/math`.
 
 ```fink
-1_234_567              # u32
-+1                     # i8
+1_234_567              # i32  — bare decimals are signed
++1                     # i8   — sign prefix forces signed
 -1                     # i8
-0xFF                   # u8
-+0xFF                  # i8
+0xFF                   # u8   — hex/oct/bin are unsigned
++0xFF                  # i8   — sign prefix forces signed (overrides bits family)
 0xFfFf                 # u16
 0xFFFF_FFFF            # u32
 0xFFFF_FFFF_FFFF_FFFF  # u64
-0o_1234_5670           # octal
-0b_0101_1111           # binary
+0o_1234_5670           # octal — unsigned by shape
+0b_0101_1111           # binary — unsigned by shape
 ```
 
 ### Floats and decimals
@@ -310,6 +312,7 @@ a >>> b                  # rotate right
 ```fink
 0..10                    # 0 inclusive, 10 exclusive
 0...10                   # 0 inclusive, 10 inclusive
+-3..                     # open ended from -3 onwards
 
 1 + 2..3 + 4             # (1 + 2)..(3 + 4) — `..` binds looser than arithmetic
 (1 + 2)..(3 + 4)         # parens optional for clarity
@@ -812,45 +815,6 @@ foo bar,
 ```
 
 For inline statement separation with `;` see [Precedence and grouping](#precedence-and-grouping).
-
----
-
-## Types *(work in progress)*
-
-```fink
-# product types
-Point = type: u8, u8
-Circle = type: {x: u8, y: u8, r: u8}
-
-# sum types / variants
-Result = variant T, E:
-  Ok T
-  Err E
-
-Shape = variant:
-  Circle {x: u8, y: u8, r: u8}
-  Rect {x: u8, y: u8, w: u8, h: u8}
-  Nil ()
-
-# opaque types
-UserId = type: ..u64
-
-# generic types
-Option = variant T:
-  Some T
-  None
-```
-
-Construction and matching:
-
-```fink
-circle = Circle {x: 1, y: 2, r: 5}
-some = Some 42
-
-match opt:
-  Some x: x
-  None: 0
-```
 
 ---
 
